@@ -1,0 +1,112 @@
+
+\section{Dark Matter Halo}
+In this section, the results of exercise 1 will be discussed. In this exercise, initial conditions are made for a dark matter halo of an isolated galaxy. This is done using the Hernquist profile which is given by,
+\begin{equation}\label{eq:her}
+  \rho(r) = \frac{M_\mathrm{dm}}{2\pi}\frac{a}{r(r+a)^3}.
+\end{equation}
+We assume her that $M_\mathrm{dm} = 10^{12}$ and $a=80\ \mathrm{kpc}$.
+
+\subsection*{1a}\label{sec:1a}
+The goal of this exercise is to write a random nu,ber generator. As a random number generator (RNG), the output a linear congruential generator is used as the input of an XOR-shift generator, which output is used for another linear congruential generator ($\mathrm{LCG}_1 \rightarrow \mathrm{XOR} \rightarrow \mathrm{LCG}_2$). The values of the parameters ar listed in (**table**). 
+
+The RNG is tested in three ways:
+\begin{enumerate}
+  \item A plot has been generated showing the first 1000 points $x_{i+1}$ vs $x_i$. This plot is shown in figure \ref{fig:1a1}. The point do not show any structure, as far as the eye can see.
+  \item 1,000,000 points are generated using the RNG. These points are shown as a histogram in figure \ref{fig:1a2}
+  \item At last, the Pearson correlation coefficient are calculated for $x_i,x_{i+1}$ and $x_i, x_{i+2}$, using 100,000 randomly generated numbers. The obtained values are: $r_{x_i,x_{i+1}} = $ \input{./output/1a_pearson_correlation1.txt} and $r_{x_i,x_{i+2}} = $ \input{./output/1a_pearson_correlation2.txt}. These values show that there is no significant correlation between sequential random numbers.
+\end{enumerate}
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    
+    \includegraphics[width=\linewidth]{./plots/1a_sequential_random_numbers.png}
+    \caption{First 1000 random points plotted as $x_{i+1}$ vs $x_i$}
+    \label{fig:1a1}
+  \end{subfigure}
+  ~
+  \begin{subfigure}[b]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{./plots/1a_histogram_random_numbers.png}
+    \caption{Histogram of 1,000,000 points generated using RNG.}
+    \label{fig:1a2}
+  \end{subfigure}
+  \caption{}
+\end{figure}
+
+
+
+\subsection*{1b}
+In this exercise, $10^6$ particles are generated in a radial profile. The RNG from \ref{sec:1a} is used. The particles are sampled in spherical coordinates. If points are uniformly sampled in $(r,\phi, \theta)$, the density of points will not be uniform inside the sphere. Say, let $U$ be uniform random points between 0 and 1. Than we can sample spherically uniform points in spherical coordinates with the following equations: (**Explain why**)
+\begin{eqnarray}
+  r =& \sqrt[3]{U}, \\
+  \phi =& 2\pi U, \\
+  \theta =&\ 1 - 2U.
+\end{eqnarray}
+A plot is generated showing the enclosed mass fraction for the generated points in spherical coordinates. The expected enclosed mass fraction is $M(<r) \propto r^3$. In figure \ref{fig:1b} the expected enclosed mass fraction and the enclosed mass fraction of the generated points are shown. The generated mass fraction is very similar to the expected mass fraction.  However, at small radii, less random points are generated. This is due to the choice of initial values of the RNG. I have not been able to make a RNG that is stable for all exercises simultaneously.(**fixthis**)
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.49\linewidth]{./plots/1b_enclosed_mass_fraction.png}
+  \caption{Expected enclosed mass fraction and enclosed mass fraction of randomly generated points, as a function of radius.}
+  \label{fig:1b}
+\end{figure}
+
+\subsection*{1c}
+Using the RNG, here a sample following the a Hernquist profile (eq. \ref{eq:her}) is generated. $\phi$ and $\theta$ are sampled as explained in the previous exercise. For $r$, we first need to calculate the cumulative distribution faction has to be calculated for equation \ref{eq:her}. First, the enclosed mass fraction, of the Hernquist profile, is given by:
+\begin{equation}
+  m(<r) = \int_0^r \int_0^\pi \int_0^{2\pi} \rho(r') r'^2 \sin\phi \mathrm{d}\phi\mathrm{d}\theta\mathrm{d}r'=\frac{M_\mathrm{dm}r^2}{\left(a+r\right)^2},
+\end{equation}
+where $\rho$ is the Hernquist profile. The total mass in the Hernquist distribution is $M = M_\mathrm{dm}$. The cumulative density profile, $F$ can thus be written as
+\begin{equation}
+  F(r) = \frac{r^2}{\left(a+r\right)^2}.
+\end{equation}
+To sample $F(r)$ using random numbers $u$, which are uniformly between 0 and 1, we need $F^{-1}(u) = r$, which is given by
+\begin{equation}
+  F^{-1}(u) = r = \frac{a\sqt(u)}{1-\sqrt{u}}.
+\end{equation}
+This result is used to sample the Hernquist profile. The results are shown in figure \ref{fig:1c1}.
+
+Furthermore, a plot showing the distribution of the particles in the $(\phi,\theta)$-plane is given in figure \ref{fig:1c2}. In the $\theta$-direction, more points are closer to $\frac{\pi}{2}$ and less at $0$ and $\pi$. This is as expected.
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.49\linewidth]{./plots/1c_3d_scatter_hernquist.png}
+  \caption{Sampled Hernquist profile for $10^3$ particles. The figure is not showning all particles. The sample containes several outliers at $r \sim 100\ \mathrm{Mpc}$. Most of the points are inside the boundaries of the figure.}
+  \label{fig:1c1}
+\end{figure}
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.49\linewidth]{./plots/1c_3d_scatter_phi_theta.png}
+  \caption{Distribution of particles in $(\phi,\theta)$-plane of sample shown in figure \ref{fig:1c1}.}
+  \label{fig:1c2}
+\end{figure}
+
+\subsection*{1d}
+Here, the derivative of equation \ref{eq:her} at $r=1.2a$ is calculated numerically and analytically. The numeric calculations is performed using Ridders' method is used. The $m$ which yields the best approximation is 10. The obtained numerical, $\mathrm{d}\hat(\rho)/\mathrm{d}(r)$, and analytical, $\mathrm{d}\hat(\rho)/\mathrm{d}(r)$ are \input{./output/1d_derivative_hernquist_hat.txt} and \input{./output/1d_derivative_hernquist.txt}, respectively.
+
+\subsection*{1e}
+The critical density is given by $\rho_c = 8.5 \times 10^{-27} \mathrm{kg/m}^3 \approx 150 M_\odot/\mathrm{kpc}^3$. $R_\Delta$ and $M_\Delta$ are the radius and mass for which $\Delta$ is the amount of time the critical density is exceeded. For our case, $R_\Delta$ is the radius at which $\rho_\mathrm{dm}(r) = \Delta\rho_c$. $R_{200}$ and $R_{500}$ are calculated using the bisection method on $\rho_\mathrm{dm}(r) - \Delta\rho_c$, where $\Delta = 200, 500$, respectively. The obtained values are: $R_{200} = $ \input{./output/1e_R200.txt}kpc and $R_{500} = $ \input{./output/1e_R500.txt}kpc.
+
+\subsection*{1f}
+At last, for this exercise, we will look at an asymmetric potential of a Hernquist profile in 2D. The potential is given by
+\begin{equation}
+  \Phi = - \frac{GM_\mathrm{dm}}{\sqrt{(x-1.3\mathrm{kpc})^2 + 2(y-4.2\mathrm{kpc})^2}+a}.
+\end{equation}
+The minimum of this potential is calculated using the Quasi-Newton method, starting from $(-1000 \mathrm{kpc}, -200\mathrm{kpc})$. As a linear solver the Golden Section algorithm is used. In this calculation $G$ is set to 1, since it is only a scaling factor, and does not affect the shape of the potential. In figure \ref{fig:1f}, the distance from the center (1.3, 4.2) is shown.
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.9\linewidth]{./plots/1f_3d_distance_to_minimum.png}
+  \caption{Distance at every iteration to (1.3, 4.2), of the Quasi-Newton algorithm.}
+  \label{fig:1f}
+\end{figure}
+
+
+\pagebreak
+
+\subsection*{Code}
+
+\lstinputlisting[language=python]{./code/problem1.py}
+
+\newpage
