@@ -5,7 +5,7 @@ output/
 *.tar.gz
 *.mp4
 *.pdf
-!NUR2020_Handin1.pdf
+!Hand-in_2_NUR2020.pdf
 
 
 # Latex
