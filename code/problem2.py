@@ -4,10 +4,31 @@ import statistics
 import numpy as np
 import matplotlib.pyplot as plt
 
-def LCG(x, a=np.uint64(1664525), c=np.uint64(1013904223)):#a=1664525, c=1013904223
+def LCG(x, a=np.uint64(1664525), c=np.uint64(1013904223)):
+    """Linear Congruential Generator
+
+    Args:
+        x (int): Seed
+        a (uint64, optional): Miltiplier. Defaults to np.uint64(1664525).
+        c (uint64, optional): Increment. Defaults to np.uint64(1013904223).
+
+    Returns:
+        int: Next generated pseudo-random-number
+    """
     return (a*x + c) % 2**64
         
-def XOR_shift(x, a1=np.uint64(19), a2=np.uint64(25), a3=np.uint64(7)):
+def XOR_shift(x, a1=np.uint64(13), a2=np.uint64(11), a3=np.uint64(3)):
+    """XOR-shift random number generator
+
+    Args:
+        x (int): state
+        a1 (unit64, optional): First right bitshift. Defaults to np.uint64(13).
+        a2 (unit64, optional): First left bitshift. Defaults to np.uint64(11).
+        a3 (uint64, optional): second right bitshift. Defaults to np.uint64(3).
+
+    Returns:
+        int: Next generated pseudo-random-number
+    """
     x = np.uint64(x)
     x = x ^ (x >> a1)
     x = x ^ (x << a2)
@@ -15,17 +36,45 @@ def XOR_shift(x, a1=np.uint64(19), a2=np.uint64(25), a3=np.uint64(7)):
     return x
 
 def RNG(x):
+    """Pseudo-random-number generator using a combination of linear congruential 
+    generatorts and XOR-shift generators. The structure of the generator is as 
+    follows:
+        LCG1 -> (XOR1 ^ XOR2) -> LCG2.
+    
+    
+
+    Args:
+        x ([type]): [description]
+
+    Yields:
+        [type]: [description]
+    """
     while True:
         x = LCG(np.uint64(x))
-        x = XOR_shift(x)
-        # x += XOR_shift(x)
-        x = LCG(x, 
-                np.uint64(6364136223846793005), 
-                np.uint64(1442695040888963407)
-            )
+        x = XOR_shift(x) ^ XOR_shift(x, 
+                                     np.uint64(15), 
+                                     np.uint64(13), 
+                                     np.uint64(9)
+                               )
+        x = LCG(
+            x, 
+            np.uint64(6364136223846793005), 
+            np.uint64(1442695040888963407)
+        )
         yield x / (2**(64)-1)
 
 def parabola_min(f, x1, x2, x3):
+    """Find the minimum a parabole going through points x1, x2 and x3.
+
+    Args:
+        f (callable): function to calculate yi values corresponding to xi
+        x1 (float): x1 coordinate
+        x2 (float): x2 coordinate
+        x3 (float): x3 coordinate
+
+    Returns:
+        float: x coordinate of minimum
+    """
     f1,f2,f3 = f(x1), f(x2), f(x3)
     numerator = (x2-x1)**2*(f2-f3) - (x2-x3)**2*(f2 - f1)
     denominator = (x2-x1)*(f2-f3) - (x2-x3)*(f2 - f1)
@@ -33,20 +82,38 @@ def parabola_min(f, x1, x2, x3):
     return x2 - 0.5 * numerator / denominator
 
 def bracketing(f, a, b, w=1.618):
+    """ Bracketing a minimum, using parabolic interpolation.
+
+    Args:
+        f (callable): Function for which to find root
+        a (float): boundry of bracket
+        b (float): boundry of bracket
+        w (float, optional): splitting fraction of bracket. Defaults to 1.618.
+
+    Returns:
+        list/float: list of float containig bracket
+    """
+
+    # ensure that a < b
     if f(b) > f(a):
         a, b = b, a
     
+    # make a guess for c
     c = b + (b-a)*w
     
+    # if on the right hand side of b, retrun bracket [a,b,c]
     if f(c) > f(b):
         return [a, b, c]
     
+    # find the minimum of the parabola throuh [a,b,c]
     d = parabola_min(f,a,b,c)
     
+    # find out the order of the new bracket and return smallest bracket
     if f(d)<f(c):
         return [b, d, c]
     elif f(d)>f(b):
         return [a,b,d]
+    # if d is to far from b, take section step
     elif abs(d-b) > 100*abs(c-b):
         d = c+(c-b)*w
         return [b,c,d]
@@ -54,25 +121,42 @@ def bracketing(f, a, b, w=1.618):
         return[b,c,d]
 
 def golden_section(f, xmin, xmax, target_acc=1e-6, maxit=1e4):
-    
+    """Finding the mimimum of a function, f, in the range [xmin, xmax] using the 
+    Golden section algorithm.
+
+    Args:
+        f (callable): Function fo which to find minimum
+        xmin (float): left boundry of bracket
+        xmax (float): right boundry of bracket
+        target_acc (float, optional): Target accuracy. Defaults to 1e-6.
+        maxit (int, optional): Maximum number of iterations. Defaults to 1e4.
+
+    Returns:
+        float: x-value of the obtained minimum
+    """
     w = 0.38197 # 2-phi
     i = 0
+    # Bracket the minimum using bracketing algorithm
     a,b,c = bracketing(f,xmin, xmax)
     
     while i < maxit:
+        # Identify larger interval
         if abs(c-b) > abs(b-a):
             x1, x2 = b, c
         else:
             x1, x2 = a, b
 
+        # Choose new point in a self similar way
         d = b + (x2 -x1)*w
 
+        # abort if target acc reached and return best value
         if abs(c-a) < target_acc:
             if f(d) < f(b):
                 return d
             else:
-                return d
+                return b
 
+        # Tighten the bracket
         if f(d) < f(b):
             if x1 == b and x2 == c:
                 a, b = b, d
@@ -84,9 +168,23 @@ def golden_section(f, xmin, xmax, target_acc=1e-6, maxit=1e4):
             elif x1 == a and x2 == b:
                 a = d
         i+=1
+
+    # if maxit reached, return last d
     return d
 
 def rejection_sampling(p, p_max, xrange, n, rng):
+    """Rejection sampling of function p usning random number generator function rng. The maximum value of p is used to normalise the function.
+
+    Args:
+        p (callable): Distribution to sample
+        p_max (float): Normalisation factor of p
+        xrange (list): xmin an xmax value to sample for
+        n (int): Number of points to sample
+        rng (generator): Random number generator object
+
+    Returns:
+        list: x coordinates of accepted points
+    """
     accepted_points = []
     while len(accepted_points) < n:
         x = next(rng) * (xrange[1]-xrange[0]) + xrange[0]
@@ -96,41 +194,72 @@ def rejection_sampling(p, p_max, xrange, n, rng):
     return accepted_points
 
 def quicksort_with_indexing(l, index_l):
-    
+    """Implementation of quicksort algorithm. Hence, this implementation is not 
+    entirely correct. It fails for list with duplicates. For the problems at 
+    hand, this does not raise any problems. However this has to be fixed.
+
+    This implementation is slightly different from quicksort(), since it keeps 
+    track of the permutations on l.
+
+    Pivot is choosen as median of first, median and last element.
+
+    This implementation is recursive
+
+    Args:
+        l (list): list to sort
+        index_l (list): [0,1,..,len(l)-2, len(l)-1]
+
+    Returns:
+        (list,list): sorted list, permutations list
+    """
+    # if len list is 2, return ellements in appropriate order
     if len(l)==2:
         pivot = l[-1]
         if l[0] > l[-1]:
             l[0], l[-1] = l[-1], l[0]
+            # keep track of permutations
             index_l[0], index_l[-1] = index_l[-1], index_l[0]
         return l, index_l
+    # if len list is smaller than 2, return list
     elif len(l) < 2:
         return l, index_l
+    # Choose a pivot and put it in the right order
     else:
         pivot = statistics.median([l[0], l[len(l)>>1], l[-1]])
         if l[0] == pivot:
             l[0], l[len(l)>>1] = l[len(l)>>1], l[0]
+            # keep track of permutations
             index_l[0], index_l[len(l)>>1] = index_l[len(l)>>1], index_l[0]
         elif l[-1] == pivot:
             l[-1], l[len(l)>>1] = l[len(l)>>1], l[-1]
+            # keep track of permutations
             index_l[-1], index_l[len(l)>>1] = index_l[len(l)>>1], index_l[-1]
         idx_pivot = len(l)>>1
         if l[0] > l[-1]:
             l[0], l[-1] = l[-1], l[0]
+            # keep track of permutations
             index_l[0], index_l[-1] = index_l[-1], index_l[0]
     
     i = 1
     j = len(l)-1
     while j >= i:
+        # increase i until l[i] is larger than pivot
         while not l[i] >= pivot:
             i+=1
+        # decrease j until l[j] is smaller than pivot
         while not l[j] <= pivot:
             j-=1
+        # Indeces hace crossed, brak while loop
         if j < i:
             break
 
+        # swap elements i and j
         l[i], l[j] = l[j], l[i]
+        # keep track of permutations
         index_l[i], index_l[j] = index_l[j], index_l[i]
         
+        # if the pivot is swaped, the index of the pivot changes and has to be 
+        # updated.
         if i == idx_pivot:
             idx_pivot = j
             i += 1
@@ -138,26 +267,44 @@ def quicksort_with_indexing(l, index_l):
             idx_pivot = i
             j -= 1
                     
-            
+    # split list and permutation list below and above pivot 
     l_lower = l[:idx_pivot]
     l_upper = l[idx_pivot+1:]
     index_lower = index_l[:idx_pivot]
     index_upper = index_l[idx_pivot+1:]
     
+    # recursively call quicksort for lower and upper list and permutaion list
     l_lower, index_lower = quicksort_with_indexing(l_lower, index_lower)
     l_upper, index_upper = quicksort_with_indexing(l_upper, index_upper)
     
-    return l_lower + [pivot] + l_upper, index_lower + [index_l[idx_pivot]] + index_upper  
+    return l_lower + [pivot] + l_upper, \
+           index_lower + [index_l[idx_pivot]] + index_upper  
 
 def quicksort(l):
-    
+    """Implementation of quicksort algorithm. Hence, this implementation is not 
+    entirely correct. It fails for list with duplicates. For the problems at 
+    hand, this does not raise any problems. However this has to be fixed.
+
+    Pivot is choosen as median of first, median and last element.
+
+    This implementation is recursive
+
+    Args:
+        l (list): list to sort
+
+    Returns:
+        list: sorted list
+    """
+    # if len list is 2, return ellements in appropriate order
     if len(l)==2:
         pivot = l[-1]
         if l[0] > l[-1]:
             l[0], l[-1] = l[-1], l[0]
         return l
+    # if len list is smaller than 2, return list
     elif len(l) < 2:
         return l
+    # Choose a pivot and put it in the right order
     else:
         pivot = statistics.median([l[0], l[len(l)>>1], l[-1]])
         if l[0] == pivot:
@@ -171,15 +318,21 @@ def quicksort(l):
     i = 1
     j = len(l)-1
     while j >= i:
+        # increase i until l[i] is larger than pivot
         while not l[i] >= pivot:
             i+=1
+        # decrease j until l[j] is smaller than pivot
         while not l[j] <= pivot:
             j-=1
+        # Indeces hace crossed, brak while loop
         if j < i:
             break
 
+        # swap elements i and j
         l[i], l[j] = l[j], l[i]
         
+        # if the pivot is swaped, the index of the pivot changes and has to be 
+        # updated.
         if i == idx_pivot:
             idx_pivot = j
             i += 1
@@ -187,10 +340,11 @@ def quicksort(l):
             idx_pivot = i
             j -= 1
                     
-            
+    # split list below and above pivot
     l_lower = l[:idx_pivot]
     l_upper = l[idx_pivot+1:]
     
+    # recursively call quicksort for lower and upper list
     l_lower = quicksort(l_lower)
     l_upper = quicksort(l_upper)
     
@@ -417,7 +571,7 @@ if __name__=='__main__':
     # Plot density of number counts in bins
     plt.hist(
         numbers_in_bin_in_halo, 
-        bins=6, 
+        bins=9,
         density=True, 
         label='number of galaxies'
     )

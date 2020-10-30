@@ -4,9 +4,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def LCG(x, a=np.uint64(1664525), c=np.uint64(1013904223)):
+    """Linear Congruential Generator
+
+    Args:
+        x (int): Seed
+        a (uint64, optional): Miltiplier. Defaults to np.uint64(1664525).
+        c (uint64, optional): Increment. Defaults to np.uint64(1013904223).
+
+    Returns:
+        int: Next generated pseudo-random-number
+    """
     return (a*x + c) % 2**64
         
 def XOR_shift(x, a1=np.uint64(13), a2=np.uint64(11), a3=np.uint64(3)):
+    """XOR-shift random number generator
+
+    Args:
+        x (int): state
+        a1 (unit64, optional): First right bitshift. Defaults to np.uint64(13).
+        a2 (unit64, optional): First left bitshift. Defaults to np.uint64(11).
+        a3 (uint64, optional): second right bitshift. Defaults to np.uint64(3).
+
+    Returns:
+        int: Next generated pseudo-random-number
+    """
     x = np.uint64(x)
     x = x ^ (x >> a1)
     x = x ^ (x << a2)
@@ -14,17 +35,43 @@ def XOR_shift(x, a1=np.uint64(13), a2=np.uint64(11), a3=np.uint64(3)):
     return x
 
 def RNG(x):
+    """Pseudo-random-number generator using a combination of linear congruential 
+    generatorts and XOR-shift generators. The structure of the generator is as 
+    follows:
+        LCG1 -> (XOR1 ^ XOR2) -> LCG2.
+    
+    
+
+    Args:
+        x ([type]): [description]
+
+    Yields:
+        [type]: [description]
+    """
     while True:
         x = LCG(np.uint64(x))
-        x = XOR_shift(x)
-        # x += XOR_shift(x)
-        x = LCG(x, 
-                np.uint64(6364136223846793005), 
-                np.uint64(1442695040888963407)
-            )
+        x = XOR_shift(x) ^ XOR_shift(x, 
+                                     np.uint64(15), 
+                                     np.uint64(13), 
+                                     np.uint64(9)
+                               )
+        x = LCG(
+            x, 
+            np.uint64(6364136223846793005), 
+            np.uint64(1442695040888963407)
+        )
         yield x / (2**(64)-1)
         
 def pearson_correlation(x, y):
+    """ Pearson correlation for lists x an y.
+
+    Args:
+        x (list): list with floats
+        y (list): list with floats
+
+    Returns:
+        float: correlation between lists x and y
+    """
     xmean = sum(x)/len(x)
     ymean = sum(y)/len(y)
     
@@ -35,26 +82,81 @@ def pearson_correlation(x, y):
     return sumxy * (sumxx*sumyy)**(-0.5)
 
 def hernquist(r, Mdm=1e12, a=80):
+    """ Hernquist profile for dark matter halos.
+
+    Args:
+        r (float): Radius in kpc
+        Mdm (float, optional): Total mass in solar mass. Defaults to 1e12.
+        a (float, optional): scale length in kpc. Defaults to 80.
+
+    Returns:
+        float: density at radius r
+    """
     return Mdm/(2*np.pi) * a/(r*(r+a)**3) 
 
 def dhernquistdr(r, Mdm=1e12, a=80):
+    """Derivative of Hernquist profile.
+
+    r (float): Radius in kpc
+        Mdm (float, optional): Total mass in solar mass. Defaults to 1e12.
+        a (float, optional): scale length in kpc. Defaults to 80.
+
+    Returns:
+        float: d(rho)/dr | r
+    """
     return -Mdm*a/(2*np.pi)*((a+4*r)/(r**2*(r+a)**4))
 
+def parabola_min(f, x1, x2, x3):
+    """Find the minimum a parabole going through points x1, x2 and x3.
+
+    Args:
+        f (callable): function to calculate yi values corresponding to xi
+        x1 (float): x1 coordinate
+        x2 (float): x2 coordinate
+        x3 (float): x3 coordinate
+
+    Returns:
+        float: x coordinate of minimum
+    """
+    f1,f2,f3 = f(x1), f(x2), f(x3)
+    numerator = (x2-x1)**2*(f2-f3) - (x2-x3)**2*(f2 - f1)
+    denominator = (x2-x1)*(f2-f3) - (x2-x3)*(f2 - f1)
+    
+    return x2 - 0.5 * numerator / denominator
+
 def bracketing(f, a, b, w=1.618):
+    """ Bracketing a minimum, using parabolic interpolation.
+
+    Args:
+        f (callable): Function for which to find root
+        a (float): boundry of bracket
+        b (float): boundry of bracket
+        w (float, optional): splitting fraction of bracket. Defaults to 1.618.
+
+    Returns:
+        list/float: list of float containig bracket
+    """
+
+    # ensure that a < b
     if f(b) > f(a):
         a, b = b, a
     
+    # make a guess for c
     c = b + (b-a)*w
     
+    # if on the right hand side of b, retrun bracket [a,b,c]
     if f(c) > f(b):
         return [a, b, c]
     
+    # find the minimum of the parabola throuh [a,b,c]
     d = parabola_min(f,a,b,c)
     
+    # find out the order of the new bracket and return smallest bracket
     if f(d)<f(c):
         return [b, d, c]
     elif f(d)>f(b):
         return [a,b,d]
+    # if d is to far from b, take section step
     elif abs(d-b) > 100*abs(c-b):
         d = c+(c-b)*w
         return [b,c,d]
@@ -62,25 +164,42 @@ def bracketing(f, a, b, w=1.618):
         return[b,c,d]
 
 def golden_section(f, xmin, xmax, target_acc=1e-6, maxit=1e4):
-    
+    """Finding the mimimum of a function, f, in the range [xmin, xmax] using the 
+    Golden section algorithm.
+
+    Args:
+        f (callable): Function fo which to find minimum
+        xmin (float): left boundry of bracket
+        xmax (float): right boundry of bracket
+        target_acc (float, optional): Target accuracy. Defaults to 1e-6.
+        maxit (int, optional): Maximum number of iterations. Defaults to 1e4.
+
+    Returns:
+        float: x-value of the obtained minimum
+    """
     w = 0.38197 # 2-phi
     i = 0
+    # Bracket the minimum using bracketing algorithm
     a,b,c = bracketing(f,xmin, xmax)
     
     while i < maxit:
+        # Identify larger interval
         if abs(c-b) > abs(b-a):
             x1, x2 = b, c
         else:
             x1, x2 = a, b
 
+        # Choose new point in a self similar way
         d = b + (x2 -x1)*w
 
+        # abort if target acc reached and return best value
         if abs(c-a) < target_acc:
             if f(d) < f(b):
                 return d
             else:
-                return d
+                return b
 
+        # Tighten the bracket
         if f(d) < f(b):
             if x1 == b and x2 == c:
                 a, b = b, d
@@ -93,73 +212,175 @@ def golden_section(f, xmin, xmax, target_acc=1e-6, maxit=1e4):
                 a = d
         i+=1
 
+    # if maxit reached, return last d
     return d
 
 def central_difference(f, x, h=None):
+    """Calculate estimate for derivative of function f for list of x-coordinates x.
+
+    Args:
+        f (callable): Function for which to calculate derivative
+        x (list): list of x values for which to calculate central difference.
+        h (float, optional): Stap size of central difference. Defaults to None.
+
+    Returns:
+        list: list of y values of derivatives
+    """
+    # if h is not specified take mean difference between values in x
     if not h:
         h = sum([abs(x[i+1]-x[i]) for i in range(len(x)-1)])/len(x)
+    # calculate central difference
     dfdx = (f(x+h)-f(x-h))/(2*h)
     return dfdx
 
 def ridders(f,x,m,d,target_err):
+    """Estimate the derivative of a function, f, for coordinates x. Order of the 
+    Ridders' method can be specified before hand. Function will be terminated if 
+    a target accuracy is reached.
+
+    Args:
+        f (callable): Function for which to calculate derivative
+        x (float): x value for which to calculate derivative
+        m (int): Order of approximation
+        d (float): Factor by which to decrease interval in central difference
+        target_acc (float, optional): Target accuracy.
+
+    Returns:
+        float: estimate of derivative at x
+    """
+    # initial step sice for central difference
     h = [0.1]
+    # first estimate 
     dfdx_hat = [central_difference(f,x,h[-1])]
+    # first order estimation for m values of h (hi = h0/(i*d)) 
     while len(dfdx_hat) < m:
         h.append(h[-1]/d)
         dfdx_hat.append(central_difference(f,x,h[-1]))
-        
+    
     for k in range(len(dfdx_hat)):
         D = np.zeros((np.shape(dfdx_hat)[0], np.shape(dfdx_hat)[0]))
         D[:,0] = dfdx_hat
         prev = 0
+
+        # combine pairs of results 
         for i in range(len(dfdx_hat)-1): #columns
             for j in range(len(dfdx_hat)-i-1):
                 D[i, j+1] = (d**(2*(j+1))*D[i+1,j] - D[i,j])/(d**(2*(j+1))-1)
+            # only continue when improvement over previous best approximation 
+            # estimate is smaller than the target error.
             if abs(D[i,0]-prev)>target_err:
                 prev=D[i,0]
             else:
-                print('target error reached')
+                # abort id target accuracy is reached
                 return D[i,0]
         return D[i,0]
 
-def bisection(f, a, b, acc=1e-6):
+def bisection(f, a, b, target_err=1e-6):
+    """Recursive implementation of bisection root finding algorithm. Keeps 
+    splitting the interval in half, and keep interval which encloses root.
+
+    Args:
+        f (callable): Function for which to calculate derivative
+        a (float): boundry of bracket
+        b (float): boundry of bracket
+        target_acc (float, optional): Target accuracy. Defaults to 1e-6.
+
+    Raises:
+        RuntimeError: no root inside bracket [a,b]
+
+    Returns:
+        float: x value of root of
+    """
+    # split interval in half
     c = 0.5*(a+b)
     fc = f(c)
-    if abs(fc) <= acc:
+    # stop when f(c) is closer to 0 than target accuracy
+    if abs(fc) <= target_err:
         return c
     fa = f(a)
     fb = f(b)
+    # find bracket enclosing root and recursivelly call bisection with the 
+    # smaller interval
     if fa*fc < 0:
-        return bisection(f,a,c, acc)
+        return bisection(f,a,c, target_err)
     elif fb*fc < 0:
-        return bisection(f,c,b, acc)
+        return bisection(f,c,b, target_err)
+    # abort when nu root is inbetween [a,c] or [b,c]
     else:
         raise RuntimeError("No root found in interval ({}, {})".format(a,b))
 
-def hernquist_potential(x, y, Mdm=1e12, a=80, G=1):
-    return -G*Mdm / ( ((x-1.3)**2 + 2*(y-4.2)**2)**(0.5) +a)
+def hernquist_potential(x, y, x_center=1.3, y_center=4.2, Mdm=1e12, a=80, G=1):
+    """ 2D Hernquist potential with center at (x_center, y_center).
 
-def grad_hernquist_potential(x,y, Mdm=1e12, a=80, G=1):
-    pot = hernquist_potential(x,y,Mdm,a)
-    denominator = ((x-1.3)**2 + 2*(y-4.2)**2)**(1/2)
+    Args:
+        x (float): x coordinate in kpc
+        y (float): y coordinate in kpc
+        x_center (float): x coordinate of center
+        y_center (float): y coordinate of center
+        Mdm (float, optional): Total mass in solar mass. Defaults to 1e12.
+        a (float, optional): scale length in kpc. Defaults to 80.
+        G (flaot, optional): Gravitational constant. Defaults to 1.
+
+    Returns:
+        float: potential at (x,y)
+    """
+   
+    return -G*Mdm / ( ((x-x_center)**2 + 2*(y-y_center)**2)**(0.5) +a)
+
+def grad_hernquist_potential(
+        x, y, x_center=1.3, y_center=4.2, Mdm=1e12, a=80, G=1
+    ):
+    """ Gradient of 2D Hernquist potential with center at (x_center, y_center).
+
+    Args:
+        x (float): x coordinate in kpc
+        y (float): y coordinate in kpc
+        x_center (float): x coordinate of center
+        y_center (float): y coordinate of center
+        Mdm (float, optional): Total mass in solar mass. Defaults to 1e12.
+        a (float, optional): scale length in kpc. Defaults to 80.
+        G (flaot, optional): Gravitational constant. Defaults to 1.
+
+    Returns:
+        list: gradient of potential at (x,y)
+    """
+    pot = hernquist_potential(x,y,x_center,y_center,Mdm,a)
+    denominator = ((x-x_center)**2 + 2*(y-y_center)**2)**(1/2)
     factor=1/(G*Mdm)
-    dpotdx = factor * (x-1.3)/denominator * pot**2
-    dpotdy = factor * 2*(y-4.2)/denominator * pot**2
+    dpotdx = factor * (x-x_center)/denominator * pot**2
+    dpotdy = factor * 2*(y-y_center)/denominator * pot**2
     return np.array([dpotdx, dpotdy]).T
 
 def quasi_newton(f, gradf, startx, starty, target_acc=1e-6, maxit=1000):
-    
+    """Quasi-Newton methode for finding minimum of 2D function. Function makes 
+    use of BFGS methode for updating hessian.
+
+    Args:
+        f (callabl): Fucntion which has as input an x and y coordinate
+        gradf (callable): Function that calculates the gradient at x and y
+        startx (float): Starting x point of minimum search
+        starty (float): Starting y point of minimum search
+        target_acc (float, optional): Target accuracy. Defaults to 1e-6.
+        maxit (int, optional): Maximum number of iterations. Defaults to 1e4.
+
+    Returns:
+        list, list: list containig all position during search and list with 
+            final x,y coordinate
+    """
     pos = []
     xi = np.array([startx, starty]).T
+    # initial hessian
     Hi = np.diag((1,1))
     i = 0
     while i < maxit:
         pos.append(xi)
         
-        
+        # Calculate gradiant at (x,y)
         gradf = grad_hernquist_potential(xi[0], xi[1])
         
+        # obtain direction for the next step
         ni = -Hi.dot(gradf)
+        # minimize x_i+1 = x_i + l_i*n_i using golden section algorithm.=
         func_l = lambda l: hernquist_potential(x=xi[0]+l*ni[0], y=xi[1]+l*ni[1])
         l = golden_section(func_l, 0, 10000 ,target_acc=1e-6)
         
@@ -168,11 +389,11 @@ def quasi_newton(f, gradf, startx, starty, target_acc=1e-6, maxit=1000):
         
         D_i1 = grad_hernquist_potential(x_i1[0], x_i1[1]) - gradf  
         
-        
+        # Check for convergence
         if all(abs(d)<target_acc for d in D_i1):
-            print('target acc reached')
             return pos, x_i1
         
+        # Update hessian according to BFGS method
         HD = Hi.dot(D_i1)
         
         u = delta_i1/(delta_i1 @ D_i1) - (HD)/(D_i1 @ (HD))
@@ -182,6 +403,7 @@ def quasi_newton(f, gradf, startx, starty, target_acc=1e-6, maxit=1000):
                - np.outer(HD, HD)/(D_i1 @ HD) \
                + (D_i1 @ HD)*np.outer(u,u)
         
+        # take the step
         xi = x_i1
         i += 1
     return pos ,x_i1
@@ -197,7 +419,6 @@ if __name__ == '__main__':
     print('random seed: ', seed)
 
     #1a
-    
     rng = RNG(seed)
     rand_n = [next(rng) for _ in range(N)]
 
@@ -227,11 +448,10 @@ if __name__ == '__main__':
         ls='-', 
         color='C1', 
         zorder=1, 
-        label='$\lambda$'
+        label=r'$\lambda$'
     )
     plt.hlines(
-        50000-np.sqrt(50000)
-        , 
+        50000-np.sqrt(50000), 
         0, 
         1, 
         ls='--', 
@@ -268,31 +488,29 @@ if __name__ == '__main__':
         f.write('{:0.5f}'.format(correlation2))
     
     #1b
-    # Sample in spherical coordinates
-    theta = np.arccos([1 - 2*next(rng) for _ in range(N)])
-    phi = np.array([2*np.pi*next(rng) for _ in range(N)])
-    r = np.array(rand_n)**(1/3)
+    a = 80 #kpc
 
-    # Transform Spherical to Carthesian coordinates
-    x = r*np.sin(theta)*np.cos(phi)
-    y = r*np.sin(theta)*np.sin(phi)
-    z = r*np.cos(theta)
+    # Sample r in spherical coordinates for Hernquist profile
+    r = a*np.array(rand_n)**0.5/(1-np.array(rand_n)**0.5)
 
-    # Calculate m(<r)
+    # Calculate m(<r)/M
     cumsum_m = []
-    steps = 100
-    xrange = np.linspace(0,1,steps)
-    for i in xrange:
-        cumsum_m.append(np.sum(r<i)/N)
+    steps = 1000
+    r_range = np.logspace(0,np.log10(max(r)),steps)
+    for i in r_range:
+        cumsum_m.append(np.sum(r<i)/len(r))
+    
+    cumsum_theoratical = r_range**2/(a+r_range)**2
     
     # Plot results
     plt.figure(figsize=(5,5))
-    plt.loglog(xrange, cumsum_m, label='random sample', ls='--')
-    plt.loglog(xrange, xrange**3, label='theoretical', ls='-.')
-    plt.legend()
-    plt.xlabel('radius')
+    plt.loglog(r_range, cumsum_m, label='random sample', ls='--')
+    plt.loglog(r_range, cumsum_theoratical, label='theoretical', ls='-.')
+    plt.legend(loc=4)
+    plt.xlabel('radius (kpc)')
     plt.ylabel('enclosed mass fraction')
-    plt.axis(xmin=1e-2, ymin=1e-6, xmax=1, ymax=1)
+    plt.axis(xmin=1, ymin=1e-4, xmax=max(r), ymax=1+0.1)
+    plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, '1b_enclosed_mass_fraction.png'))
     plt.clf()
 
@@ -301,10 +519,9 @@ if __name__ == '__main__':
     a = 80 #kpc
 
     # Use samples from previous problem
-    theta = theta[:n]
-    phi = phi[:n]
-    u = np.array(rand_n)[:n]
-    r = a*u**0.5/(1-u**0.5)
+    theta = np.arccos([1 - 2*next(rng) for _ in range(n)])
+    phi = np.array([2*np.pi*next(rng) for _ in range(n)])
+    r = r[:n]
 
     # Transform Spherical to Carthesian coordinates
     x = r*np.sin(theta)*np.cos(phi) * 1e-3

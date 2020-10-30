@@ -1,15 +1,15 @@
 \section{Satellite galaxies around a massive central – part 2}
-This exercise revisites the the number denisty satalite profile from the previous problem set. The number denisty profile of satalite galaxies is given by
+This exercise revisits the the number density satellite profile from the previous problem set. The number density profile of satellite galaxies is given by
 \begin{equation}\label{eq:sat}
   n(x) = A \langle N_\mathrm{sat}\rangle \left( \frac{x}{b} \right) ^{a-3} \mathrm{exp} \left[ - \left( \frac{x}{b} \right)^{c} \right],
 \end{equation}
 where $x$ is the radius relative to the virial radius, $x\equiv r/r_\mathrm{vir}$, $a = 2.4$, $b = 0.25$, $c = 1.6$, $A=265/(5\pi^{3/2})$, $x_\mathrm{max}=5$ and $\langle N_\mathrm{sat} \rangle = 100$.
 
 \subsection*{2a}
-The number density in an infinitesimal range $[x,x+\mathrm{d}x)$ is given by $N(x)\mathrm{d}x = n(x)4\pi x^2\mathrm{d}x$. Using the Golden Section algorithm\footnote{The exercise states the a different algorithm should be used from exercise 1. I have not been able to implement Brent's method. Therefore, I use the Golden Section algorithm again.}, the maximum of $N(x)$ is found in for $x \in [0,5)$. The obtained maximum is at $x =$ \input{./output/2a_x_max_Ndx.txt} and has it's peak at $N = $ \input{./output/2a_max_Ndx.txt}.
+The number of satellite galaxies in an infinitesimal range $[x,x+\mathrm{d}x)$ is given by $N(x)\mathrm{d}x = n(x)4\pi x^2\mathrm{d}x$. Using the Golden Section algorithm\footnote{The exercise states the a different algorithm should be used from exercise 1. I have not been able to implement Brent's method. Therefore, the Golden Section algorithm is used again.}, the maximum of $N(x)$ is found in for $x \in [0,5)$. The obtained maximum is at $x =$ \input{./output/2a_x_max_Ndx.txt} and has it's peak at $N = $ \input{./output/2a_max_Ndx.txt}.
 
 \subsection*{2b}\label{sec:2b}
-In this exercise, satellite relative radii are sampled, such that the 3D distribution would statistically follow \ref{eq:sat}. This means that the probability distribution of the relative radii $x \in [0,5)$ should be $p(x)\mathrm{d}x = N(x)\mathrm{d}x/\langle N_\mathrm{sat} \rangle$. This distribution is sampled using rejection sampling. 10,000 points are sampled. A histogram is shown in figure \ref{fig:2b}, containg the normalised distribution of the sampled points together with the $N(x)$. As can be seen from the figure is the distribution very well sampled with this method.
+In this exercise, satellite relative radii are sampled, such that the 3D distribution would statistically follow \ref{eq:sat}. This means that the probability distribution of the relative radii $x \in [0,5)$ should be $p(x)\mathrm{d}x = N(x)\mathrm{d}x/\langle N_\mathrm{sat} \rangle$. This distribution is sampled using rejection sampling. 10,000 points are sampled. The histogram is shown in figure \ref{fig:2b}, contains the normalised distribution (i.e. divided by the bin width) of the sampled points together with $N(x)$. As can be seen from the figure is the distribution very well sampled with this method.
 
 \begin{figure}[!ht]
   \centering
@@ -19,32 +19,32 @@ In this exercise, satellite relative radii are sampled, such that the 3D distrib
 \end{figure}
 
 \subsection*{2c}
-From the sample, generated in the previous exercise, 100 random satellite galaxies are drawn. To do this, first a list of 10,000 random numbers is generated. This list is sorted using the Quicksort algorithm, where we keep track of the permutation of the indices. The permutation list is used to effectively shuffle the random list satellite galaxies. The 10,000 satellite galaxies, are shuffled according to the permutations list and the first 100 elements are drawn from the shuffled list. This new sample of 100 satellite galaxies, is obtain ensuring that every galaxy is selected with equal probability, no galaxy is drawn twice and no galaxy that is drawn is rejected. The new sample is sorted, using Quicksort, from smallest to largest radius. Using this sorted list the numbet of galaxies with $r$ is calculated and shown in figure \ref{fig:2c}.
+From the sample, generated in the previous exercise, 100 random satellite galaxies are drawn. To do this, first a list of 10,000 random numbers is generated. This list is sorted using the Quicksort algorithm, where we keep track of the permutation of the indices. The permutation list is used to effectively shuffle the random list of satellite galaxies. The 10,000 satellite galaxies, are shuffled according to the permutations list and the first 100 elements are drawn from the shuffled list. This new sample of 100 satellite galaxies, is obtain ensuring that every galaxy is selected with equal probability, no galaxy is drawn twice and no galaxy that is drawn is rejected. The new sample is sorted, using Quicksort, from smallest to largest radius. Using this sorted list the number of galaxies with $r$ is calculated and shown in figure \ref{fig:2c}.
 
 \begin{figure}[!ht]
   \centering
   \includegraphics[width=0.49\linewidth]{./plots/2c_galaxies_within_radius.png}
-  \caption{Enclosed number of satellite galaxies at relative radius $r$ of sample of 100 galaxies.}
+  \caption{Enclosed number of satellite galaxies at radius $r/r_\mathrm{vir}$ of sample of 100 galaxies.}
   \label{fig:2c}
 \end{figure}
 
 \subsection*{2d}
 Here, we take the bin from \ref{sec:2b} containing the largest number of galaxies. Using Quicksort, the elements are sorted and the 16th and 84th percentile and the median are selected. The obtained values are 16th-percentile = \input{./output/2d_16th_percentile.txt}, 84th-percentile = \input{./output/2d_84th_percentile.txt} and median = \input{./output/2d_median.txt}.
 
-Next, the 10,000 points are divided into 100 halos of 100 galaxies. Figure \ref{fig:2d1} shows a bar plot with the number of galaxies in the radial bin from before, which contained the most of the 100,000 galaxies. Furthermore, figure \ref{fig:2d2} shows a histogram of the number density of halos containg a number of satellite galaxies. Inidcated with a solid curve is the Poissonian distribution with $\lambda =  36.26$. This figure shows that the disribution do not match very well. I think that this is due to the quality of the RNG. The distribution is very sensitive to the choose of random seed and RNG initial conditions. 
+Next, the 10,000 points are divided into 100 halos of 100 galaxies. Figure \ref{fig:2d1} shows a bar plot with the number of galaxies in the radial bin from before, which contained the most of the 100,000 galaxies. Furthermore, figure \ref{fig:2d2} shows a histogram of the number density of halos containg a number of satellite galaxies. Inidcated with a solid curve is the Poissonian distribution with $\lambda =  36.26$. This figure shows that the disribution matches the Poisson disribution within a reasonable uncertainty. 
 
 \begin{figure}[ht!]
-  \centering
-  \begin{subfigure}[b]{0.49\textwidth}
+  
+  \begin{subfigure}[t]{0.49\textwidth}\centering
     
     \includegraphics[width=\linewidth]{./plots/2d_bar_plot_counts_per_halo.png}
-    \caption{Number of satellite galaxies, for 100 generated halos in the bin containing the largest number of the 100,000 sampled satellite galaxies. The solid horizontal line indicates the mean number of satellite galaxies in the halos and the dashed horizontal line the Poissonian $1-\sigma$ deviation from the mean.}
+    \caption{Number of satellite galaxies, for 100 generated halos in the bin containing the largest number of the 100,000 sampled satellite galaxies. The solid horizontal line indicates the mean number of satellite galaxies in the halos and the dashed horizontal line the Poissonian $1\sigma$ deviation from the mean.}
     \label{fig:2d1}
   \end{subfigure}
     ~
-  \begin{subfigure}[b]{0.49\textwidth}
+  \begin{subfigure}[t]{0.49\textwidth}\centering
     \includegraphics[width=\linewidth]{./plots/2d_number_denisty_counts_per_halo.png}
-    \caption{Number of satellite galaxies, for 100 generated halos in the bin containing the largest number of the 100,000 sampled satellite galaxies. The solid horizontal line indicates the mean number of satellite galaxies in the halos and the dashed horizontal line the Poissonian $1\sigma$ deviation from the mean.}
+    \caption{Number density of satellite galaxies, for 100 generated halos in the bin containing the largest number of the 100,000 sampled satellite galaxies. The solid line shows the Poisson distribution with $\lambda =  36.26$.}
     \label{fig:2d1}
   \end{subfigure}
   \caption{}
@@ -54,7 +54,7 @@ Next, the 10,000 points are divided into 100 halos of 100 galaxies. Figure \ref{
 
 \subsection*{Code}
 
-\lstinputlisting[language=python]{./code/problem2.py}
+\lstinputlisting{./code/problem2.py}
 
 
 \newpage
