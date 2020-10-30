@@ -152,9 +152,9 @@ def golden_section(f, xmin, xmax, target_acc=1e-6, maxit=1e4):
         # abort if target acc reached and return best value
         if abs(c-a) < target_acc:
             if f(d) < f(b):
-                return d
-            else:
                 return b
+            else:
+                return d
 
         # Tighten the bracket
         if f(d) < f(b):

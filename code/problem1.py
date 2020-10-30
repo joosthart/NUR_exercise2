@@ -195,9 +195,9 @@ def golden_section(f, xmin, xmax, target_acc=1e-6, maxit=1e4):
         # abort if target acc reached and return best value
         if abs(c-a) < target_acc:
             if f(d) < f(b):
-                return d
-            else:
                 return b
+            else:
+                return d
 
         # Tighten the bracket
         if f(d) < f(b):
@@ -216,7 +216,8 @@ def golden_section(f, xmin, xmax, target_acc=1e-6, maxit=1e4):
     return d
 
 def central_difference(f, x, h=None):
-    """Calculate estimate for derivative of function f for list of x-coordinates x.
+    """Calculate estimate for derivative of function f for list of x-coordinates 
+    x.
 
     Args:
         f (callable): Function for which to calculate derivative
@@ -257,7 +258,7 @@ def ridders(f,x,m,d,target_err):
         h.append(h[-1]/d)
         dfdx_hat.append(central_difference(f,x,h[-1]))
     
-    for k in range(len(dfdx_hat)):
+    for _ in range(len(dfdx_hat)):
         D = np.zeros((np.shape(dfdx_hat)[0], np.shape(dfdx_hat)[0]))
         D[:,0] = dfdx_hat
         prev = 0
@@ -309,14 +310,12 @@ def bisection(f, a, b, target_err=1e-6):
     else:
         raise RuntimeError("No root found in interval ({}, {})".format(a,b))
 
-def hernquist_potential(x, y, x_center=1.3, y_center=4.2, Mdm=1e12, a=80, G=1):
-    """ 2D Hernquist potential with center at (x_center, y_center).
+def hernquist_potential(x, y, Mdm=1e12, a=80, G=1):
+    """ 2D Hernquist potential with center at (1.3, 4.2).
 
     Args:
         x (float): x coordinate in kpc
         y (float): y coordinate in kpc
-        x_center (float): x coordinate of center
-        y_center (float): y coordinate of center
         Mdm (float, optional): Total mass in solar mass. Defaults to 1e12.
         a (float, optional): scale length in kpc. Defaults to 80.
         G (flaot, optional): Gravitational constant. Defaults to 1.
@@ -325,18 +324,16 @@ def hernquist_potential(x, y, x_center=1.3, y_center=4.2, Mdm=1e12, a=80, G=1):
         float: potential at (x,y)
     """
    
-    return -G*Mdm / ( ((x-x_center)**2 + 2*(y-y_center)**2)**(0.5) +a)
+    return -G*Mdm / ( ((x-1.3)**2 + 2*(y-4.2)**2)**(0.5) +a)
 
 def grad_hernquist_potential(
         x, y, x_center=1.3, y_center=4.2, Mdm=1e12, a=80, G=1
     ):
-    """ Gradient of 2D Hernquist potential with center at (x_center, y_center).
+    """ Gradient of 2D Hernquist potential with center at (1.3, 4.2).
 
     Args:
         x (float): x coordinate in kpc
         y (float): y coordinate in kpc
-        x_center (float): x coordinate of center
-        y_center (float): y coordinate of center
         Mdm (float, optional): Total mass in solar mass. Defaults to 1e12.
         a (float, optional): scale length in kpc. Defaults to 80.
         G (flaot, optional): Gravitational constant. Defaults to 1.
@@ -344,11 +341,11 @@ def grad_hernquist_potential(
     Returns:
         list: gradient of potential at (x,y)
     """
-    pot = hernquist_potential(x,y,x_center,y_center,Mdm,a)
-    denominator = ((x-x_center)**2 + 2*(y-y_center)**2)**(1/2)
+    pot = hernquist_potential(x,y,Mdm,a)
+    denominator = ((x-1.3)**2 + 2*(y-4.2)**2)**(1/2)
     factor=1/(G*Mdm)
-    dpotdx = factor * (x-x_center)/denominator * pot**2
-    dpotdy = factor * 2*(y-y_center)/denominator * pot**2
+    dpotdx = factor * (x-1.3)/denominator * pot**2
+    dpotdy = factor * 2*(y-4.2)/denominator * pot**2
     return np.array([dpotdx, dpotdy]).T
 
 def quasi_newton(f, gradf, startx, starty, target_acc=1e-6, maxit=1000):
@@ -388,7 +385,7 @@ def quasi_newton(f, gradf, startx, starty, target_acc=1e-6, maxit=1000):
         delta_i1 = l*ni
         
         D_i1 = grad_hernquist_potential(x_i1[0], x_i1[1]) - gradf  
-        
+
         # Check for convergence
         if all(abs(d)<target_acc for d in D_i1):
             return pos, x_i1
